@@ -1,102 +1,43 @@
-#include <WiFi.h>
-#include <DNSServer.h>
-#include "StringUtils.h"
-#include <Wire.h>
-#include "config.h"
-#include "web.h"
-#include "sim.h"
-#include "commands.h"
+#include <ESP8266WiFi.h>  // mettre #include <WiFi.h> s’il s’agit d’un ESP32
 
+// GPIO utilisés, sur le NodeMCU, le GPIO 2 allume une LED bleue
+#define LED_BLUE 2
+#define RELAY_DOOR 4   
 
-Config myConfig;
-char replybuffer[255];
-
-
-uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
-
+// Variables globales
+String ssid = " Revue Hackable";
+String password = "DiamondsAreForever";
 int nbClient;
-
-const byte        DNS_PORT = 53;          // Capture DNS requests on port 53
-//IPAddress local_IP(8,8,8,8);
 IPAddress local_IP(10,10,10,10);
-IPAddress gateway(192,168,4,9);
 IPAddress subnet(255,255,255,0);
-DNSServer dnsServer;
-Web web(myConfig);
-Sim sim(myConfig);
-/*TinyGsm modem(SerialAT);*/
-
-void checkDoor(){
- int current = WiFi.softAPgetStationNum();
-  if( current > nbClient ) {
-     openDoor();
-  }
-
-  nbClient = current;
-  
-  //Serial.printf("Stations connected to soft-AP = %d\r\n", WiFi.softAPgetStationNum());
-  //Serial.println("");
-
-}
-
-bool modem_init = false;
 
 void setup() {
-  Serial.begin(115200);
-  myConfig.init();
-  pinMode(RELAY_DOOR,OUTPUT);
-  digitalWrite(RELAY_DOOR,DOOR_CLOSE);
-  pinMode(RELAY_ELEC,OUTPUT);
-  digitalWrite(RELAY_ELEC,myConfig.getPowerState());
-
-  pinMode(LED_BLUE, OUTPUT);
-  pinMode(SIM800L_POWER, OUTPUT);
-
-  digitalWrite(LED_BLUE, HIGH);
-  digitalWrite(SIM800L_POWER, HIGH);
-
-  
-  
   nbClient = 0;
-  Serial.print("Setting soft-AP configuration ... ");
-  WiFi.softAPConfig(local_IP, local_IP, subnet) ;
-   // WiFi.softAP("DNSServer CaptivePortal example");
-//WiFi.hostname("antoine");
-  WiFi.softAP(myConfig.getSSID(),myConfig.getPassword()) ;
-  
-  dnsServer.start(DNS_PORT, "*", local_IP);
-
- // Serial.print("Soft-AP IP address = ");
-//  Serial.println(WiFi.softAPIP());
-
-  web.init();
-
-  Serial.println("Start modem");
-  delay(6000);
-  sim.init();
-  digitalWrite(LED_BLUE, LOW);
-
+  Serial.begin(115200);    // Ouvre le port COM et fixe de débit de communication
+  pinMode(RELAY_DOOR,OUTPUT); 
+  pinMode(LED_BLUE,OUTPUT);
+  digitalWrite(LED_BLUE,LOW); // LOW = 0 : la led est allumée
+  digitalWrite(RELAY_DOOR,LOW); 
+  Serial.print("Start WiFi ... ");
+  WiFi.softAPConfig(local_IP, local_IP, subnet); // Création du point d’accès Wi-Fi
+  WiFi.softAP(ssid,password) ;
+  delay(500); // pour voir la led allumée au démarrage
+  digitalWrite(LED_BLUE,HIGH); // HIGH = 1 : la led est éteinte
 }
 
-long prevMillis = 0;
-int interval = 1000;
-boolean ledState = false;
-  Preferences pp;
+void openDoor() {
+    digitalWrite(LED_BLUE, LOW);
+    Serial.println("Ouverture de la porte, 10 sec.\n");
+    digitalWrite(RELAY_DOOR, HIGH); // On allume la led, c’est pour faire joli.
+    delay(10000); // 10 secondes
+    digitalWrite(RELAY_DOOR, LOW); // fermeture de la porte (de la serrure en tout cas)
+    digitalWrite(LED_BLUE, HIGH);
+}
+
 
 void loop() {
-  checkDoor();
-  if(nbClient > 0) {
-    dnsServer.processNextRequest();
-    web.handleClient();
-  }
-  else delay(500);
-
- if (millis() - prevMillis > interval) {
-    ledState = !ledState;
-    //digitalWrite(LED_BLUE, ledState);
-
-    prevMillis = millis();
-  }
-  
-  sim.loop();
- }
+  int current = WiFi.softAPgetStationNum();
+  if( current > nbClient ) openDoor(); // une connexion Wi-FI supplémentaire: ouverture de la porte.
+  nbClient = current;
+  delay(500);  // attente 500 ms. 
+}
