@@ -23,7 +23,7 @@
 
 class Config{
 public:
-  const char * proprio = "+33612345678";
+  const char * proprio = "+331234567890";
    
 
   Config();
@@ -55,10 +55,10 @@ private:
   bool powerState = 0;
 
   String ssid = "Appartement Associes";
-  String password = "987654321";
+  String password = "motComplique";
 
   String www_username = "admin";
-  String www_password = "esp8266";
+  String www_password = "motComplique2";
 
   const char * config_file = "config.txt";
   const char * power_file = "power.txt";

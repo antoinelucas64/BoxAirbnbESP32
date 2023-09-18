@@ -104,7 +104,7 @@ void Sim::loop() {
         String password = aa::secondWord(smsString);
         if (password.length() > 7) {
           Serial.println("Change password to " + password);
-          if (WiFi.softAP(config.getSSID(), password)) {
+          if (WiFi.softAP(config.getSSID().c_str(), password.c_str())) {
             config.writeConfig(password);
           }
 
