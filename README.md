@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <a href="https://www.associés.fr"><img src="../BoxAirbnb/doc/logo.png" alt="Antoine & Associés" width="300"></a>
+  <a href="https://www.associés.fr"><img src="/antoinelucas64/BoxAirbnb/doc/logo.png" alt="Antoine & Associés" width="300"></a>
 </h1>
 
 <h4 align="center">Box Airbnb - domotics with SMS and Wi-Fi with ESP32 microcontroller</h4>
@@ -17,7 +17,7 @@ Using an SIM800L or equivalement chip interfaced with ESP32 microcontroller
 
 By setting up a Wi-Fi network as an access point, the server can monitor when a Wi-Fi client has connected. With this project, it opens a relay that can open a door.
 
-![schema](doc/schema.png "Principe")
+![schema](../BoxAirbnb/doc/schema.png "Principe")
 
 ## Green Technology
 
