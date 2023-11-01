@@ -20,7 +20,6 @@ int nbClient;
 const byte DNS_PORT = 53;  // Capture DNS requests on port 53
 //IPAddress local_IP(8,8,8,8);
 IPAddress local_IP(10, 10, 10, 10);
-IPAddress gateway(192, 168, 4, 9);
 IPAddress subnet(255, 255, 255, 0);
 DNSServer dnsServer;
 Web web(myConfig);
@@ -49,10 +48,8 @@ void setup() {
   digitalWrite(RELAY_ELEC, myConfig.getPowerState());
 
   pinMode(LED_BLUE, OUTPUT);
-  pinMode(SIM800L_POWER, OUTPUT);
 
   digitalWrite(LED_BLUE, HIGH);
-  digitalWrite(SIM800L_POWER, HIGH);
 
 
 
@@ -75,7 +72,6 @@ void setup() {
   web.init();
 
   Serial.println("Start modem");
-  delay(6000);
   sim.init();
   digitalWrite(LED_BLUE, LOW);
 }
@@ -83,7 +79,7 @@ void setup() {
 void printWEATHERtime() {
 
  
- printf("free mem: %d\n",heap_caps_get_free_size(0) );
+// printf("free mem: %d\n",heap_caps_get_free_size(0) );
  // heap_caps_print_heap_info(0) ;
 }
 

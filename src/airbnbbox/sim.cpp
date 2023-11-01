@@ -2,8 +2,14 @@
 #include "StringUtils.h"
 #include <WiFi.h>
 
+#define MODEM_POWER_ON SIM800L_POWER
+#define MODEM_RST 5
+#define MODEM_PWRKEY 4
 
+bool simOn = false;
+bool firstStart = true;
 HardwareSerial* sim800lSerial = &Serial1;
+int timeRef = 0;
 
 Sim::Sim(Config& config_p)
   : config(config_p),
@@ -11,10 +17,31 @@ Sim::Sim(Config& config_p)
 }
 
 void Sim::init() {
+    Serial.println(F("Init Sim"));
+  
 
+#ifdef MODEM_RST
+pinMode(MODEM_RST, OUTPUT);
+digitalWrite(MODEM_RST, HIGH); // 5
+#endif
+
+pinMode(MODEM_PWRKEY, OUTPUT);   // 4
+pinMode(MODEM_POWER_ON, OUTPUT); // 23
+digitalWrite(MODEM_POWER_ON, HIGH);
+
+digitalWrite(MODEM_PWRKEY, HIGH);
+delay(100);
+digitalWrite(MODEM_PWRKEY, LOW);
+delay(1000);
+digitalWrite(MODEM_PWRKEY, HIGH);
+
+  simOn = true;
+
+  timeRef = millis();
+  delay(6000);
 
   // Make it slow so its easy to read!
-  sim800lSerial->begin(4800, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
+  sim800lSerial->begin(115200, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
   if (!sim800l.begin(*sim800lSerial)) {
     Serial.println(F("Couldn't find GSM SIM800L"));
     while (1);
@@ -33,7 +60,8 @@ void Sim::init() {
   sim800lSerial->print("AT+CNMI=2,1\r\n");
 
   Serial.println("GSM SIM800L Ready");
-  sendSMS(config.proprio);
+  if(firstStart) sendSMS(config.proprio);
+  firstStart = false;
 }
 
 void Sim::sendSMS(const char* telephone) {
@@ -56,7 +84,11 @@ void Sim::sendSMS(const char* telephone) {
 
 void Sim::loop() {
   char buffer[250];
-
+  if(!simOn) {
+    if( millis() - timeRef > 1000 ){
+         init();
+    } else return;
+  }
 
   if (sim800l.available()) {
     int slot = 0;  // this will be the slot number of the SMS
@@ -138,6 +170,15 @@ void Sim::loop() {
         Serial.println(F("OK!"));
       } 
       digitalWrite(LED_BLUE, LOW);
+    }
+  } 
+
+  if( simOn ){
+    if( millis() - timeRef > 120000 ){          
+        Serial.println("shut down sim ");
+        simOn = false;
+        digitalWrite(SIM800L_POWER, LOW);
+        timeRef = millis();
     }
   } 
 }
