@@ -925,6 +925,7 @@ bool Adafruit_FONA::sendSMS(const char *smsaddr,const char *smsmsg) {
 bool Adafruit_FONA::deleteSMS(uint8_t message_index) {
   if (!sendCheckReply(F("AT+CMGF=1"), ok_reply))
     return false;
+
   // read an sms
   char sendbuff[12] = "AT+CMGD=000";
   sendbuff[8] = (message_index / 100) + '0';
@@ -933,7 +934,11 @@ bool Adafruit_FONA::deleteSMS(uint8_t message_index) {
   message_index %= 10;
   sendbuff[10] = message_index + '0';
 
-  return sendCheckReply(sendbuff, ok_reply, 2000);
+  if(! sendCheckReply(sendbuff, ok_reply, 2000)){
+    Serial.println("Delete all SMS");
+    sendCheckReply("DEL ALL", ok_reply, 2000);
+  }
+  return true;
 }
 
 /********* USSD *********************************************************/
