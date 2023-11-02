@@ -9,9 +9,9 @@
 bool simOn = false;
 bool firstStart = true;
 HardwareSerial* sim800lSerial = &Serial1;
-int timeRef = 0;
+int simTimeRef = 0;
 
-Sim::Sim(Config& config_p)
+Sim::Sim(ConfigSim& config_p)
   : config(config_p),
     sim800l(Adafruit_FONA(SIM800L_PWRKEY)) {
 }
@@ -37,7 +37,7 @@ digitalWrite(MODEM_PWRKEY, HIGH);
 
   simOn = true;
 
-  timeRef = millis();
+  simTimeRef = millis();
   delay(6000);
 
   // Make it slow so its easy to read!
@@ -60,7 +60,7 @@ digitalWrite(MODEM_PWRKEY, HIGH);
   sim800lSerial->print("AT+CNMI=2,1\r\n");
 
   Serial.println("GSM SIM800L Ready");
-  if(firstStart) sendSMS(config.proprio);
+  if(firstStart) sendSMS(config.getPhone().c_str());
   firstStart = false;
 }
 
@@ -85,7 +85,7 @@ void Sim::sendSMS(const char* telephone) {
 void Sim::loop() {
   char buffer[250];
   if(!simOn) {
-    if( millis() - timeRef > 1000 ){
+    if( millis() - simTimeRef > 1000 ){
          init();
     } else return;
   }
@@ -119,7 +119,7 @@ void Sim::loop() {
       }
       Serial.print(F("FROM = "));
       Serial.println(phone);
-      if (!aa::contains(phone, config.proprio)) {
+      if (!aa::contains(phone, config.getPhone().c_str())) {
         sim800l.deleteSMS(slot);
         Serial.println("SMS ignored");
         return;
@@ -131,8 +131,10 @@ void Sim::loop() {
         smsString = String(buffer);
         Serial.println(smsString);
       } 
-
-      if (aa::contains(smsString.c_str(), "PASSWORD")) {
+      if (aa::contains(smsString.c_str(), "REBOOT")) {
+        ESP.restart();
+      }
+      else if (aa::contains(smsString.c_str(), "PASSWORD")) {
         String password = aa::secondWord(smsString);
         if (password.length() > 7) {
           Serial.println("Change password to " + password);
@@ -150,7 +152,6 @@ void Sim::loop() {
         if (config.getPowerState() != POWER_ON) {
           config.writePowerState(POWER_ON);
         }
-        digitalWrite(RELAY_ELEC, POWER_ON);
         // Send SMS for status
         sendSMS(phone);
       } else if (aa::contains(smsString.c_str(), "OFF")) {
@@ -158,7 +159,6 @@ void Sim::loop() {
         if (config.getPowerState() != POWER_OFF) {
           config.writePowerState(POWER_OFF);
         }
-        digitalWrite(RELAY_ELEC, POWER_OFF);
         // Send SMS for status
         sendSMS(phone);
 
@@ -174,11 +174,11 @@ void Sim::loop() {
   } 
 
   if( simOn ){
-    if( millis() - timeRef > 120000 ){          
+    if( millis() - simTimeRef > 1200000 ){          
         Serial.println("shut down sim ");
         simOn = false;
         digitalWrite(SIM800L_POWER, LOW);
-        timeRef = millis();
+        simTimeRef = millis();
     }
   } 
 }
