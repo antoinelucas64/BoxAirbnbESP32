@@ -1,15 +1,20 @@
-#include <WiFi.h>
 #include <DNSServer.h>
 #include "StringUtils.h"
 #include <Wire.h>
-#include "config.h"
-#include "web.h"
+#include "configsim.h"
+#include "websim.h"
 #include "sim.h"
 #include "commands.h"
+#ifdef ESP32
+#include <WiFi.h>  // il s’agit d’un ESP32
+#define NOTIFICATION_CONNECTION_WIFI ARDUINO_EVENT_WIFI_AP_STACONNECTED
+#else
+#include <ESP8266WiFi.h>
+#define NOTIFICATION_CONNECTION_WIFI WIFI_EVENT_SOFTAPMODE_DISTRIBUTE_STA_IP
+#endif
 
-#define NOTIFICATION_CONNECTION_WIFI SYSTEM_EVENT_AP_STACONNECTED
 
-Config myConfig;
+ConfigSim myConfig;
 char replybuffer[255];
 
 
@@ -22,19 +27,27 @@ const byte DNS_PORT = 53;  // Capture DNS requests on port 53
 IPAddress local_IP(10, 10, 10, 10);
 IPAddress subnet(255, 255, 255, 0);
 DNSServer dnsServer;
-Web web(myConfig);
+WebSim web(myConfig);
 Sim sim(myConfig);
 /*TinyGsm modem(SerialAT);*/
 bool openTheDoor = false;
+bool doorIsOpen = false;
+int timeDoorOpen;
 
 void openDoor() {
   digitalWrite(LED_BLUE, HIGH);
   Serial.println("open\nHIGH");
   digitalWrite(RELAY_DOOR, DOOR_OPEN);
-  delay(10000);
-  digitalWrite(RELAY_DOOR, DOOR_CLOSE);
-  digitalWrite(LED_BLUE, LOW);
   openTheDoor = false;
+  timeDoorOpen = millis();
+  doorIsOpen = true;
+}
+
+void closeDoor() {
+  doorIsOpen = false;
+  Serial.println("close door");
+  digitalWrite(RELAY_DOOR, LOW);
+  digitalWrite(LED_BLUE, LOW);
 }
 
 bool modem_init = false;
@@ -78,9 +91,9 @@ void setup() {
 
 void printWEATHERtime() {
 
- 
-// printf("free mem: %d\n",heap_caps_get_free_size(0) );
- // heap_caps_print_heap_info(0) ;
+
+  // printf("free mem: %d\n",heap_caps_get_free_size(0) );
+  // heap_caps_print_heap_info(0) ;
 }
 
 
@@ -93,6 +106,9 @@ Preferences pp;
 int count = 0;
 void loop() {
   if (openTheDoor) openDoor();
+  else if (doorIsOpen && millis() - timeDoorOpen > 10000) {
+    closeDoor();
+  }
   nbClient = WiFi.softAPgetStationNum();
 
   if (nbClient > 0) {

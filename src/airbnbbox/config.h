@@ -2,39 +2,37 @@
 #define CONFIG_H
 
 #include <WString.h>
-#include <Preferences.h>
-
-#define SIM800L_RX     27
-#define SIM800L_TX     26
-#define SIM800L_PWRKEY 4
-#define SIM800L_RST    5
-#define SIM800L_POWER  23
-
-
+#ifdef ESP32
 #define LED_BLUE  13
+#include <Preferences.h>
+#else
+#define LED_BLUE  2
+#include "Preferences.h"
+#endif
+
+
 // pins possible: 2 (4) 12 13
-#define RELAY_ELEC 12
-#define RELAY_DOOR 2
+#define RELAY_DOOR 14
 #define DOOR_OPEN  LOW
 #define DOOR_CLOSE  HIGH
-#define POWER_ON  LOW
-#define POWER_OFF  HIGH
 
 
 class Config{
 public:
-  const char * proprio = "+331234567890";
    
 
   Config();
-  ~Config(){};
+  virtual ~Config(){};
 
   void init();
+
+  void factoryReset();
+
+  virtual String info();
   void writeConfig(const String & password);
-  void writePowerState(bool powerState);
-  inline bool getPowerState() const{
-    return powerState;
-  }
+  void writeConfig(const String & ssid, const String & password);
+  void writeWWWConfig(const String & user,const String & password);
+  
   inline const String & getSSID() const {
     return ssid;
   }
@@ -42,27 +40,27 @@ public:
     return password;
   }
    
+  inline const String & getWWWUser() const {
+    return www_user;
+  }  
+
   inline const String & getWWWPassword() const {
     return www_password;
   }  
 
-  inline const String & getWWWUser() const {
-    return www_username;
-  }
 private:
   void readConfig();
-  void readPowerState();
-  bool powerState = 0;
+  void blink();
 
   String ssid = "Appartement Associes";
-  String password = "motComplique";
+  String password = "totototo";
 
-  String www_username = "admin";
-  String www_password = "motComplique2";
+  String www_user = "admin";
+  String www_password = "toto";
 
   const char * config_file = "config.txt";
-  const char * power_file = "power.txt";
+
+protected:
   Preferences config;
-  Preferences powerperf;
 };
 #endif
