@@ -13,8 +13,8 @@
 
 // pins possible: 2 (4) 12 13
 #define RELAY_DOOR 14
-#define DOOR_OPEN  LOW
-#define DOOR_CLOSE  HIGH
+#define DOOR_OPEN  HIGH
+#define DOOR_CLOSE  LOW
 
 
 class Config{
@@ -61,6 +61,7 @@ private:
   const char * config_file = "config.txt";
 
 protected:
+  virtual String getType();
   Preferences config;
 };
 #endif

@@ -10,6 +10,10 @@ void ConfigSim::init(){
   readSimConfig() ;
 }
 
+String ConfigSim::getType(){
+  return "sim";
+}
+
 
 void ConfigSim::writePowerState(bool powerState_p) {
   powerState = powerState_p;

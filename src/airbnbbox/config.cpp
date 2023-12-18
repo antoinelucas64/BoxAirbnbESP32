@@ -7,9 +7,18 @@ void Config::init(){
   readConfig();
 }
 
+String Config::getType(){
+  return "basic";
+}
 
 String Config::info(){
-  return "type=\tESP8266-1\nSSID=\t"+getSSID() + "\nPassword=\t" + getPassword() + "\nWeb user=\t" + getWWWUser() + "\nWeb password=\t" + getWWWPassword() + "Version=\t 1\nDate=\t" + __DATE__ + "\n";
+#ifdef ESP32
+  String type = getType()+ "-ESP32" ;
+#else
+  String type = getType()+ "-ESP8266" ;
+#endif
+
+  return "type=\t"+type+"\nSSID=\t"+getSSID() + "\nPassword=\t" + getPassword() + "\nWeb user=\t" + getWWWUser() + "\nWeb password=\t" + getWWWPassword() + "\nVersion=\t 1\nDate=\t" + __DATE__ + "\n";
 }
 
 void Config::factoryReset(){

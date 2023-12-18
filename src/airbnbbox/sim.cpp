@@ -17,6 +17,7 @@ Sim::Sim(ConfigSim& config_p)
 }
 
 void Sim::init() {
+
     Serial.println(F("Init Sim"));
   
 
@@ -42,6 +43,8 @@ digitalWrite(MODEM_PWRKEY, HIGH);
 
   // Make it slow so its easy to read!
   sim800lSerial->begin(115200, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
+  //sim800lSerial->begin(600, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
+    // fait tout planter ! fg
   if (!sim800l.begin(*sim800lSerial)) {
     Serial.println(F("Couldn't find GSM SIM800L"));
     while (1);
@@ -68,7 +71,12 @@ void Sim::sendSMS(const char* telephone) {
   String msg = "Power is ";
   if (digitalRead(RELAY_ELEC) == POWER_ON) msg += "ON ";
   else msg += "OFF ";
-  msg += "password is " + config.getPassword();
+  msg += "password is " + config.getPassword() +" SSID "+ config.getSSID() ;
+  sendSMS(telephone, msg);
+}
+
+
+void Sim::sendSMS(const char* telephone, String  msg) {
   delay(100);
   if (!sim800l.sendSMS(telephone, msg.c_str())) {
     Serial.println(F("Failed"));
@@ -76,10 +84,18 @@ void Sim::sendSMS(const char* telephone) {
     Serial.println(F("Sent!"));
   }
   delay(100);
-  sim800l.sendCheckReply("AT+CMGDA=\"DEL ALL\"", F("> "));
-  delay(100);
+  Serial.println(F("Sent 6 "+sim800l.getNumSMS()));
   sim800l.sendCheckReply("AT+CMGDA=6", F("> "));
-}
+  delay(100);
+
+  Serial.println(F("Sent DEL ALL"));
+  sim800l.sendCheckReply("AT+CMGDA=\"DEL ALL\"", F("> "));
+
+  Serial.println("FIN");
+  sim800l.flush();
+  Serial.println("done");
+
+  }
 
 
 void Sim::loop() {
@@ -87,10 +103,14 @@ void Sim::loop() {
   if(!simOn) {
     if( millis() - simTimeRef > 1000 ){
          init();
-    } else return;
+    } else {
+    Serial.println(F("Sim off"));  
+      return;
+    }
   }
 
   if (sim800l.available()) {
+    Serial.println("hey something here. try read");
     int slot = 0;  // this will be the slot number of the SMS
     int charCount = 0;
 
@@ -103,6 +123,9 @@ void Sim::loop() {
       }
     }
    
+
+    Serial.print("buffer ");
+    Serial.println(buffer);
 
     //Scan the notification string for an SMS received notification.
     //  If it's an SMS message, we'll get the slot number in 'slot'
@@ -134,6 +157,9 @@ void Sim::loop() {
       if (aa::contains(smsString.c_str(), "REBOOT")) {
         ESP.restart();
       }
+      else if (aa::contains(smsString.c_str(), "INFO")) {
+        sendSMS(phone,config.info());
+      }
       else if (aa::contains(smsString.c_str(), "PASSWORD")) {
         String password = aa::secondWord(smsString);
         if (password.length() > 7) {
@@ -163,7 +189,8 @@ void Sim::loop() {
         sendSMS(phone);
 
       } else {
-        Serial.println("message ignore (command not found)");
+        String msg =  "Commands are ON, OFF, PASSWORD [new password], REBOOT, INFO";
+        sendSMS(phone,msg);
       }
 
       if (sim800l.deleteSMS(slot)) {
@@ -180,5 +207,6 @@ void Sim::loop() {
         digitalWrite(SIM800L_POWER, LOW);
         simTimeRef = millis();
     }
-  } 
+  }
+  
 }

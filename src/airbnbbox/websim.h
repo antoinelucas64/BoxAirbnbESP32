@@ -19,6 +19,7 @@ private:
 
 protected:
   virtual  String responseHTML();
+
   virtual String createAdminPage();
 };
 

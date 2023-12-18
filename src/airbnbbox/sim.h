@@ -15,5 +15,6 @@ private:
   ConfigSim& config;
   Adafruit_FONA sim800l;
   void sendSMS(const char * telephone);
+  void sendSMS(const char * telephone, String  msg);
 };
 #endif

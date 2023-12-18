@@ -97,7 +97,7 @@ void Web::handleLogin() {
 
   if (server.hasArg("PASSWORD")) {
     Serial.println("user " + server.arg("user") + " vs " + config.getWWWUser());
-    Serial.println("Password " + server.arg("PASSWORD"));
+    Serial.println("Password " + server.arg("PASSWORD") + " vs " + config.getWWWPassword());
     Serial.println("checked  " + server.arg("isadmin"));
 
     if (server.arg("isadmin") == "1") {

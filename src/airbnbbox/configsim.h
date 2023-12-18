@@ -33,6 +33,10 @@ private:
 
   String phone = "+3312345678";
   bool powerState = 0;
+
+protected:
+  virtual String getType();
+
 };
 
 
