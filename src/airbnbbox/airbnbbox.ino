@@ -46,7 +46,7 @@ void openDoor() {
 void closeDoor() {
   doorIsOpen = false;
   Serial.println("close door");
-  digitalWrite(RELAY_DOOR, LOW);
+  digitalWrite(RELAY_DOOR, DOOR_CLOSE);
   digitalWrite(LED_BLUE, LOW);
 }
 
