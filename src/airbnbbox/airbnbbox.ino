@@ -27,8 +27,8 @@ const byte DNS_PORT = 53;  // Capture DNS requests on port 53
 IPAddress local_IP(10, 10, 10, 10);
 IPAddress subnet(255, 255, 255, 0);
 DNSServer dnsServer;
-WebSim web(myConfig);
 Sim sim(myConfig);
+WebSim web(myConfig,sim);
 /*TinyGsm modem(SerialAT);*/
 bool openTheDoor = false;
 bool doorIsOpen = false;
@@ -89,21 +89,12 @@ void setup() {
   digitalWrite(LED_BLUE, LOW);
 }
 
-void printWEATHERtime() {
-
-
-  // printf("free mem: %d\n",heap_caps_get_free_size(0) );
-  // heap_caps_print_heap_info(0) ;
-}
-
 
 
 
 long prevMillis = 0;
 int interval = 1000;
 boolean ledState = false;
-Preferences pp;
-int count = 0;
 void loop() {
   if (openTheDoor) openDoor();
   else if (doorIsOpen && millis() - timeDoorOpen > 10000) {
@@ -114,7 +105,10 @@ void loop() {
   if (nbClient > 0) {
     dnsServer.processNextRequest();
     web.handleClient();
-  } else delay(500);
+  } else {
+    if(web.haveToReboot()) web.reboot();
+    delay(500);
+  }
 
   if (millis() - prevMillis > interval) {
     ledState = !ledState;
@@ -125,8 +119,5 @@ void loop() {
 
   sim.loop();
 
-  count++;
-  if (count % 100 == 0) {
-    printWEATHERtime();
-  }
+ 
 }
