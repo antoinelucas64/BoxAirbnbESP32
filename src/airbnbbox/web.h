@@ -15,6 +15,7 @@ public:
   Web(Config& config);
   ~Web(){};
 
+  virtual void reboot();
   virtual void init();
   void handleClient();
   bool haveToReboot();

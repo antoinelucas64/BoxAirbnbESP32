@@ -3,17 +3,19 @@
 
 #include "configsim.h"
 #include "web.h"
+#include "sim.h"
 
 class WebSim : public Web {
 
 public:
-  WebSim(ConfigSim& config);
+  WebSim(ConfigSim& config, Sim & sim);
   virtual ~WebSim(){};
 
+  virtual void reboot();
   void init();
 private:
   ConfigSim& config;
-
+  Sim & sim;
   String formWifiPage();
   String formPhone();
 

@@ -18,23 +18,23 @@ Sim::Sim(ConfigSim& config_p)
 
 void Sim::init() {
 
-    Serial.println(F("Init Sim"));
-  
+  Serial.println(F("Init Sim"));
+
 
 #ifdef MODEM_RST
-pinMode(MODEM_RST, OUTPUT);
-digitalWrite(MODEM_RST, HIGH); // 5
+  pinMode(MODEM_RST, OUTPUT);
+  digitalWrite(MODEM_RST, HIGH);  // 5
 #endif
 
-pinMode(MODEM_PWRKEY, OUTPUT);   // 4
-pinMode(MODEM_POWER_ON, OUTPUT); // 23
-digitalWrite(MODEM_POWER_ON, HIGH);
+  pinMode(MODEM_PWRKEY, OUTPUT);    // 4
+  pinMode(MODEM_POWER_ON, OUTPUT);  // 23
+  digitalWrite(MODEM_POWER_ON, HIGH);
 
-digitalWrite(MODEM_PWRKEY, HIGH);
-delay(100);
-digitalWrite(MODEM_PWRKEY, LOW);
-delay(1000);
-digitalWrite(MODEM_PWRKEY, HIGH);
+  digitalWrite(MODEM_PWRKEY, HIGH);
+  delay(100);
+  digitalWrite(MODEM_PWRKEY, LOW);
+  delay(1000);
+  digitalWrite(MODEM_PWRKEY, HIGH);
 
   simOn = true;
 
@@ -44,12 +44,54 @@ digitalWrite(MODEM_PWRKEY, HIGH);
   // Make it slow so its easy to read!
   sim800lSerial->begin(115200, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
   //sim800lSerial->begin(600, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
-    // fait tout planter ! fg
+
   if (!sim800l.begin(*sim800lSerial)) {
     Serial.println(F("Couldn't find GSM SIM800L"));
-    while (1);
+    while (1)
+      ;
   }
   Serial.println(F("GSM SIM800L is OK"));
+  // reset sim
+  //sim800l.sendCheckReply("ATZ", F("> "));
+
+  // CMGF: 1 mode text / 0 mode PDU
+  //sim800l.sendCheckReply(F("AT+CMGF=0"),F("> ")); // OK
+
+  // list messages
+  sim800l.sendCheckReply(F("AT+CMGL?"), F("> "));         // error
+  sim800l.sendCheckReply(F("AT+CMGL=?"), F("> "));        // error
+  sim800l.sendCheckReply(F("AT+CMGL=\"ALL\""), F("> "));  // error
+  sim800l.sendCheckReply(F("AT+CMGL=4"), F("> "));        // error
+  // storage to modem
+  sim800l.sendCheckReply("AT+CPMS?", F("> "));                      // error
+  sim800l.sendCheckReply("AT+CPMS=?", F("> "));                     // error
+  sim800l.sendCheckReply("AT+CPMS=\"ME\",\"SM\",\"MT\"", F("> "));  // error
+  sim800l.sendCheckReply("AT+CSCS=?", F("> "));
+  sim800l.sendCheckReply("AT+CSCS=\"GSM\"", F("> "));
+  sim800l.sendCheckReply("AT+CSTA=?", F("> "));
+
+  sim800l.sendCheckReply("AT+CLIP=?", F("> "));
+  sim800l.sendCheckReply("AT+CLIP?", F("> "));
+  sim800l.sendCheckReply("AT+CLIP=1", F("> "));
+
+  // phone / fax / data
+  //  sim800l.sendCheckReply("AT+CSNS?",F("> ")); //
+  //  sim800l.sendCheckReply("AT+CSNS=?",F("> ")); //
+  //  sim800l.sendCheckReply("AT+CSNS=4",F("> ")); //
+
+
+  // CNMI command supported
+  sim800l.sendCheckReply("AT+CNMI=?", ">");
+
+  // not to store sms
+  sim800l.sendCheckReply("AT+CNMI?", F("> "));
+  sim800l.sendCheckReply("AT+CNMI=3,3,2,1,0", F("> "));
+  //  sim800l.sendCheckReply("AT+CNMI=2,2",F("> "));
+  // list of  storage type
+  sim800l.sendCheckReply("AT+CMGDA=?", F("> "));
+
+  //list of supported index to delete
+  sim800l.sendCheckReply("AT+CMGD=?", F("> "));
 
   char imei[16] = { 0 };  // MUST use a 16 character buffer for IMEI!
   uint8_t imeiLen = sim800l.getIMEI(imei);
@@ -63,7 +105,7 @@ digitalWrite(MODEM_PWRKEY, HIGH);
   sim800lSerial->print("AT+CNMI=2,1\r\n");
 
   Serial.println("GSM SIM800L Ready");
-  if(firstStart) sendSMS(config.getPhone().c_str());
+  if (firstStart) sendSMS(config.getPhone().c_str());
   firstStart = false;
 }
 
@@ -71,40 +113,59 @@ void Sim::sendSMS(const char* telephone) {
   String msg = "Power is ";
   if (digitalRead(RELAY_ELEC) == POWER_ON) msg += "ON ";
   else msg += "OFF ";
-  msg += "password is " + config.getPassword() +" SSID "+ config.getSSID() ;
+  msg += "password is " + config.getPassword() + " SSID " + config.getSSID();
   sendSMS(telephone, msg);
 }
 
 
-void Sim::sendSMS(const char* telephone, String  msg) {
+void Sim::sendSMS(const char* telephone, String msg) {
   delay(100);
+  Serial.print("Try send message ");
+  Serial.print(msg);
+  Serial.print(" to phone ");
+  Serial.println(telephone);
   if (!sim800l.sendSMS(telephone, msg.c_str())) {
     Serial.println(F("Failed"));
   } else {
     Serial.println(F("Sent!"));
   }
   delay(100);
-  Serial.println(F("Sent 6 "+sim800l.getNumSMS()));
+  Serial.print("nb sms ");
+  Serial.println(sim800l.getNumSMS());
   sim800l.sendCheckReply("AT+CMGDA=6", F("> "));
+  sim800l.sendCheckReply("AT+CMGD=,4", F("> "));
   delay(100);
 
   Serial.println(F("Sent DEL ALL"));
   sim800l.sendCheckReply("AT+CMGDA=\"DEL ALL\"", F("> "));
 
   Serial.println("FIN");
+  int MessageQtt = 0;
+  Serial.print(F("["));
+  do {
+    sim800l.flush();
+    MessageQtt++;
+  } while (sim800l.available() > 0);
+  Serial.print(MessageQtt);
   sim800l.flush();
-  Serial.println("done");
+  Serial.println("] done");
+}
 
-  }
 
+void Sim::reboot(){
+  // resert modem
+  sim800l.sendCheckReply("ATZ", F("> "));
+  sim800l.flush();
+  ESP.restart();
+}
 
 void Sim::loop() {
   char buffer[250];
-  if(!simOn) {
-    if( millis() - simTimeRef > 1000 ){
-         init();
+  if (!simOn) {
+    if (millis() - simTimeRef > 1000) {
+      init();
     } else {
-    Serial.println(F("Sim off"));  
+      Serial.println(F("Sim off"));
       return;
     }
   }
@@ -115,21 +176,39 @@ void Sim::loop() {
     int charCount = 0;
 
     // Read the notification into fonaInBuffer
-    for (int i = 0 ; i < sizeof(buffer)-1 ; i++){
+    for (int i = 0; i < sizeof(buffer) - 1; i++) {
       buffer[i] = sim800l.read();
-      if(buffer[i] == '\n'){
-        buffer[i+1] = 0;
+      if (buffer[i] == '\n') {
+        buffer[i + 1] = 0;
         break;
       }
     }
-   
 
-    Serial.print("buffer ");
+
+    Serial.print("buffer> ");
     Serial.println(buffer);
+
+    if (strncmp(buffer, "RING", 4) == 0) {
+      Serial.println("RING -> possible action here");
+      return;
+    }
+
+    // +CLIP: "0628236335",129,"",0,"",0
+    if (strncmp(buffer + 1, "CLIP", 4) == 0) {
+      Serial.println("Appel avec numero -> possible action here");
+      return;
+    }
+
 
     //Scan the notification string for an SMS received notification.
     //  If it's an SMS message, we'll get the slot number in 'slot'
-    if (1 == sscanf(buffer, "+CMTI: \"SM\",%d", &slot)) {
+    // read something like [+CMTI: "ME",53]
+    bool readCMTI = sscanf(buffer, "+CMTI: \"SM\",%d", &slot) == 1;
+    if (!readCMTI) readCMTI = sscanf(buffer, "+CMTI: \"ME\",%d", &slot) == 1;
+    else if (!readCMTI) readCMTI = sscanf(buffer, "+CMTI: \"MT\",%d", &slot) == 1;
+    else if (!readCMTI) readCMTI = sscanf(buffer, "+CMTI: \"ME_P\",%d", &slot) == 1;
+    else if (!readCMTI) readCMTI = sscanf(buffer, "+CMTI: \"SM_P\",%d", &slot) == 1;
+    if (readCMTI) {
       Serial.print("slot: ");
       Serial.println(slot);
       digitalWrite(LED_BLUE, HIGH);
@@ -153,14 +232,13 @@ void Sim::loop() {
       if (sim800l.readSMS(slot, buffer, 250, &smslen)) {
         smsString = String(buffer);
         Serial.println(smsString);
-      } 
+      }
       if (aa::contains(smsString.c_str(), "REBOOT")) {
-        ESP.restart();
-      }
-      else if (aa::contains(smsString.c_str(), "INFO")) {
-        sendSMS(phone,config.info());
-      }
-      else if (aa::contains(smsString.c_str(), "PASSWORD")) {
+        // reset SIM
+        reboot();
+      } else if (aa::contains(smsString.c_str(), "INFO")) {
+        sendSMS(phone, config.info());
+      } else if (aa::contains(smsString.c_str(), "PASSWORD")) {
         String password = aa::secondWord(smsString);
         if (password.length() > 7) {
           Serial.println("Change password to " + password);
@@ -189,24 +267,23 @@ void Sim::loop() {
         sendSMS(phone);
 
       } else {
-        String msg =  "Commands are ON, OFF, PASSWORD [new password], REBOOT, INFO";
-        sendSMS(phone,msg);
+        String msg = "Commands are ON, OFF, PASSWORD [new password], REBOOT, INFO";
+        sendSMS(phone, msg);
       }
 
       if (sim800l.deleteSMS(slot)) {
         Serial.println(F("OK!"));
-      } 
+      }
       digitalWrite(LED_BLUE, LOW);
     }
-  } 
+  }
 
-  if( simOn ){
-    if( millis() - simTimeRef > 1200000 ){          
-        Serial.println("shut down sim ");
-        simOn = false;
-        digitalWrite(SIM800L_POWER, LOW);
-        simTimeRef = millis();
+  if (simOn) {
+    if (millis() - simTimeRef > 1200000) {
+      Serial.println("shut down sim ");
+      simOn = false;
+      digitalWrite(SIM800L_POWER, LOW);
+      simTimeRef = millis();
     }
   }
-  
 }

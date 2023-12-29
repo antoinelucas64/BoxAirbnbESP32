@@ -306,7 +306,7 @@ void Web::init() {
 
 
   server.on("/reboot", [&]() {
-    ESP.restart();
+    reboot();
   });
 
   server.on("/info", [&]() {
@@ -324,6 +324,9 @@ void Web::init() {
   server.begin();
 }
 
+void Web::reboot(){
+  ESP.restart();
+}
 
 void Web::handleClient() {
   server.handleClient();

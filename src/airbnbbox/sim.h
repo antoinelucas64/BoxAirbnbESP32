@@ -11,7 +11,10 @@ public:
 
   void init();
   void loop();
+
+  void reboot();
 private:
+  Sim(const Sim &);
   ConfigSim& config;
   Adafruit_FONA sim800l;
   void sendSMS(const char * telephone);

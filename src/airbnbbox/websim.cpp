@@ -3,9 +3,10 @@
 
 
 
-WebSim::WebSim(ConfigSim& config_p)
+WebSim::WebSim(ConfigSim& config_p, Sim & sim_p)
   : Web(config_p),
-    config(config_p) {
+    config(config_p),
+    sim(sim_p) {
   Serial.println("WebSim (contructor)");
 }
 
@@ -116,4 +117,8 @@ String WebSim::createAdminPage() {
          "</html>";
 
   return out;
+}
+
+void WebSim::reboot(){
+  sim.reboot();
 }

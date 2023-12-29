@@ -20,8 +20,8 @@
 // Set the preferred SMS storage.
 //   Use "SM" for storage on the SIM.
 //   Use "ME" for internal storage on the FONA chip
-#define FONA_PREF_SMS_STORAGE "\"SM\""
-//#define FONA_PREF_SMS_STORAGE "\"ME\""
+//#define FONA_PREF_SMS_STORAGE "\"SM\""
+#define FONA_PREF_SMS_STORAGE "\"ME\""
 
 #define FONA_HEADSETAUDIO 0
 #define FONA_EXTAUDIO 1

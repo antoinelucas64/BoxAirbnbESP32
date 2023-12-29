@@ -131,18 +131,26 @@ bool Adafruit_FONA::begin(Stream &port) {
   DEBUG_PRINTLN(replybuffer);
 
   if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
+    DEBUG_PRINTLN("TYPE 808 V2");
     _type = FONA808_V2;
   } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R13")) != 0) {
+    DEBUG_PRINTLN("TYPE 808 V1");
     _type = FONA808_V1;
   } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800 R13")) != 0) {
+    DEBUG_PRINTLN("TYPE 800 R13");
+    _type = FONA800L;
+  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800 R14")) != 0) {
+    DEBUG_PRINTLN("TYPE 800 R14");
     _type = FONA800L;
   } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIMCOM_SIM5320A")) !=
              0) {
+               
     _type = FONA3G_A;
   } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIMCOM_SIM5320E")) !=
              0) {
     _type = FONA3G_E;
   }
+
 
   if (_type == FONA800L) {
     // determine if L or H
@@ -160,6 +168,7 @@ bool Adafruit_FONA::begin(Stream &port) {
       _type = FONA800H;
     }
   }
+
 
 #if defined(FONA_PREF_SMS_STORAGE)
   sendCheckReply(F("AT+CPMS=" FONA_PREF_SMS_STORAGE "," FONA_PREF_SMS_STORAGE

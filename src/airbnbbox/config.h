@@ -51,6 +51,7 @@ public:
 private:
   void readConfig();
   void blink();
+  Config(const Config &);
 
   String ssid = "Appartement Associes";
   String password = "totototo";
