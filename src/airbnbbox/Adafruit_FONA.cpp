@@ -169,6 +169,8 @@ bool Adafruit_FONA::begin(Stream &port) {
     }
   }
 
+  if (_type == FONA800H)     DEBUG_PRINTLN(F("TYPE FONA800H"));
+
 
 #if defined(FONA_PREF_SMS_STORAGE)
   sendCheckReply(F("AT+CPMS=" FONA_PREF_SMS_STORAGE "," FONA_PREF_SMS_STORAGE
@@ -902,16 +904,16 @@ bool Adafruit_FONA::sendSMS(const char *smsaddr,const char *smsmsg) {
   mySerial->write(0x1A);
 
   DEBUG_PRINTLN("^Z");
-
-  if ((_type == FONA3G_A) || (_type == FONA3G_E)) {
+  
+  if ((_type == FONA3G_A) || (_type == FONA3G_E)|| (_type == FONA800H) || (_type == FONA800L )) {
     // Eat two sets of CRLF
     readline(200);
-    // DEBUG_PRINT("Line 1: "); DEBUG_PRINTLN(strlen(replybuffer));
+    DEBUG_PRINT("Line 1: "); DEBUG_PRINTLN(strlen(replybuffer));
     readline(200);
-    // DEBUG_PRINT("Line 2: "); DEBUG_PRINTLN(strlen(replybuffer));
+    DEBUG_PRINT("Line 2: "); DEBUG_PRINTLN(strlen(replybuffer));
   }
-  readline(10000); // read the +CMGS reply, wait up to 10 seconds!!!
-  DEBUG_PRINT("Line 3: "); DEBUG_PRINTLN(strlen(replybuffer));
+  readline(40000); // read the +CMGS reply, wait up to 10 seconds!!!
+  DEBUG_PRINT("Line 3: "); DEBUG_PRINTLN(replybuffer);
   if (strstr(replybuffer, "+CMGS") == 0) {
     return false;
   }
@@ -945,7 +947,7 @@ bool Adafruit_FONA::deleteSMS(uint8_t message_index) {
 
   if(! sendCheckReply(sendbuff, ok_reply, 2000)){
     Serial.println("Delete all SMS");
-    sendCheckReply("DEL ALL", ok_reply, 2000);
+    sendCheckReply("DEL ALL", ok_reply, 5000);
   }
   return true;
 }
@@ -2473,7 +2475,7 @@ uint8_t Adafruit_FONA::readline(uint16_t timeout, bool multiline) {
         }
       }
       replybuffer[replyidx] = c;
-      // DEBUG_PRINT(c, HEX); DEBUG_PRINT("#"); DEBUG_PRINTLN(c);
+      //DEBUG_PRINT(c, HEX); DEBUG_PRINT("#"); DEBUG_PRINTLN(c);
       replyidx++;
     }
 
@@ -2508,6 +2510,17 @@ uint8_t Adafruit_FONA::getReply(char *send, uint16_t timeout) {
 
   return l;
 }
+
+String Adafruit_FONA::readFromSim(uint16_t timeout ){
+  readline(timeout);
+  DEBUG_PRINTLN(replybuffer);
+  String out (replybuffer);
+  return out;
+}
+
+
+
+
 
 /**
  * @brief Send a command and return the reply

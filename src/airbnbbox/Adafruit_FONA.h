@@ -40,7 +40,7 @@
 #define FONA_STTONE_INDIANDIALTONE 19
 #define FONA_STTONE_USADIALTONE 20
 
-#define FONA_DEFAULT_TIMEOUT_MS 500
+#define FONA_DEFAULT_TIMEOUT_MS 1300
 
 #define FONA_HTTP_GET 0
 #define FONA_HTTP_POST 1
@@ -190,6 +190,8 @@ public:
                       uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
   bool sendCheckReply(char *send, FONAFlashStringPtr reply,
                       uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
+
+  String readFromSim(uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
 
 protected:
   int8_t _rstpin; ///< Reset pin

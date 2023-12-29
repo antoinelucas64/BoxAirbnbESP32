@@ -29,12 +29,12 @@ void Sim::init() {
   pinMode(MODEM_PWRKEY, OUTPUT);    // 4
   pinMode(MODEM_POWER_ON, OUTPUT);  // 23
   digitalWrite(MODEM_POWER_ON, HIGH);
-
+/*
   digitalWrite(MODEM_PWRKEY, HIGH);
   delay(100);
   digitalWrite(MODEM_PWRKEY, LOW);
   delay(1000);
-  digitalWrite(MODEM_PWRKEY, HIGH);
+  digitalWrite(MODEM_PWRKEY, HIGH);*/
 
   simOn = true;
 
@@ -47,33 +47,41 @@ void Sim::init() {
 
   if (!sim800l.begin(*sim800lSerial)) {
     Serial.println(F("Couldn't find GSM SIM800L"));
-    while (1)
-      ;
   }
+  sim800l.readFromSim(5000);// CALL READY
+  sim800l.readFromSim(5000);// SMS READY
+  sim800l.readFromSim(500);
+
   Serial.println(F("GSM SIM800L is OK"));
+  
   // reset sim
   //sim800l.sendCheckReply("ATZ", F("> "));
 
   // CMGF: 1 mode text / 0 mode PDU
-  //sim800l.sendCheckReply(F("AT+CMGF=0"),F("> ")); // OK
+  sim800l.sendCheckReply(F("AT+CMGF=1"),F("> "),2000); // OK
 
   // list messages
-  sim800l.sendCheckReply(F("AT+CMGL?"), F("> "));         // error
-  sim800l.sendCheckReply(F("AT+CMGL=?"), F("> "));        // error
-  sim800l.sendCheckReply(F("AT+CMGL=\"ALL\""), F("> "));  // error
-  sim800l.sendCheckReply(F("AT+CMGL=4"), F("> "));        // error
+  //sim800l.sendCheckReply(F("AT+CMGL?"), F("> "));         // error
+ // sim800l.sendCheckReply(F("AT+CMGL=?"), F("> "));        // error
+  sim800l.sendCheckReply(F("AT+CMGL=\"ALL\""), F("> "),20000);  // OK
+  //sim800l.sendCheckReply(F("AT+CMGL=4"), F("> "),4000);        // error
   // storage to modem
-  sim800l.sendCheckReply("AT+CPMS?", F("> "));                      // error
-  sim800l.sendCheckReply("AT+CPMS=?", F("> "));                     // error
-  sim800l.sendCheckReply("AT+CPMS=\"ME\",\"SM\",\"MT\"", F("> "));  // error
-  sim800l.sendCheckReply("AT+CSCS=?", F("> "));
-  sim800l.sendCheckReply("AT+CSCS=\"GSM\"", F("> "));
-  sim800l.sendCheckReply("AT+CSTA=?", F("> "));
+  sim800l.sendCheckReply("AT+CPMS?", F("> "));                      // +CPMS: "ME",0,50,"SM",9,50,"MT",9,100
+  sim800l.sendCheckReply("AT+CPMS=?", F("> "));                     // +CPMS: ("SM","ME","SM_P","ME_P","MT"),("SM","ME","SM_P","ME_P","MT"),("SM","ME","SM_P","ME_P","MT")
+  sim800l.sendCheckReply("AT+CPMS=\"ME\",\"ME\",\"ME\"", F("> "));  // error
+  sim800l.sendCheckReply("AT+CSCS=?", F("> ")); // +CSCS: ("IRA","GSM","UCS2","HEX","PCCP","PCDN","8859-1")
+  sim800l.sendCheckReply("AT+CSCS=\"GSM\"", F("> ")); // OK
+  sim800l.sendCheckReply("AT+CSTA=?", F("> "));//+CSTA: (129,145,161,177)
 
-  sim800l.sendCheckReply("AT+CLIP=?", F("> "));
-  sim800l.sendCheckReply("AT+CLIP?", F("> "));
-  sim800l.sendCheckReply("AT+CLIP=1", F("> "));
+  sim800l.sendCheckReply("AT+CLIP=?", F("> "),3000);
+  sim800l.sendCheckReply("AT+CLIP?", F("> "),3000);
+  sim800l.sendCheckReply("AT+CLIP=1", F("> "),3000);
 
+  // CFUN=0 minmum function CFUN=1 normal CFUN=4 mode avion
+  //sim800l.sendCheckReply("AT+CFUN=?", F("> "),3000);
+  //sim800l.sendCheckReply("AT+CFUN?", F("> "),3000);
+  //sim800l.sendCheckReply("AT+CFUN=1", F("> "),3000);
+ 
   // phone / fax / data
   //  sim800l.sendCheckReply("AT+CSNS?",F("> ")); //
   //  sim800l.sendCheckReply("AT+CSNS=?",F("> ")); //
@@ -81,17 +89,17 @@ void Sim::init() {
 
 
   // CNMI command supported
-  sim800l.sendCheckReply("AT+CNMI=?", ">");
+  sim800l.sendCheckReply("AT+CNMI=?", ">",1500);
 
   // not to store sms
-  sim800l.sendCheckReply("AT+CNMI?", F("> "));
-  sim800l.sendCheckReply("AT+CNMI=3,3,2,1,0", F("> "));
+  sim800l.sendCheckReply("AT+CNMI?", F("> "),3000);
+  sim800l.sendCheckReply("AT+CNMI=3,3,2,1,0", F("> "),2000);
   //  sim800l.sendCheckReply("AT+CNMI=2,2",F("> "));
   // list of  storage type
-  sim800l.sendCheckReply("AT+CMGDA=?", F("> "));
+  sim800l.sendCheckReply("AT+CMGDA=?", F("> "),1000);
 
   //list of supported index to delete
-  sim800l.sendCheckReply("AT+CMGD=?", F("> "));
+  sim800l.sendCheckReply("AT+CMGD=?", F("> "),1000);
 
   char imei[16] = { 0 };  // MUST use a 16 character buffer for IMEI!
   uint8_t imeiLen = sim800l.getIMEI(imei);
@@ -132,12 +140,12 @@ void Sim::sendSMS(const char* telephone, String msg) {
   delay(100);
   Serial.print("nb sms ");
   Serial.println(sim800l.getNumSMS());
-  sim800l.sendCheckReply("AT+CMGDA=6", F("> "));
-  sim800l.sendCheckReply("AT+CMGD=,4", F("> "));
+  sim800l.sendCheckReply("AT+CMGDA=6", F("> "),3500);
+  sim800l.sendCheckReply("AT+CMGD=,4", F("> "),1500);
   delay(100);
 
   Serial.println(F("Sent DEL ALL"));
-  sim800l.sendCheckReply("AT+CMGDA=\"DEL ALL\"", F("> "));
+  sim800l.sendCheckReply("AT+CMGDA=\"DEL ALL\"", F("> "),25000);
 
   Serial.println("FIN");
   int MessageQtt = 0;
@@ -193,7 +201,7 @@ void Sim::loop() {
       return;
     }
 
-    // +CLIP: "0628236335",129,"",0,"",0
+    // +CLIP: "0612345678",129,"",0,"",0
     if (strncmp(buffer + 1, "CLIP", 4) == 0) {
       Serial.println("Appel avec numero -> possible action here");
       return;
@@ -218,12 +226,15 @@ void Sim::loop() {
       // Retrieve SMS sender address/phone number.
       if (!sim800l.getSMSSender(slot, phone, 31)) {
         Serial.println("Didn't find SMS message in slot!");
+        delay(600);
+        sim800l.getSMSSender(slot, phone, 31);
       }
       Serial.print(F("FROM = "));
       Serial.println(phone);
       if (!aa::contains(phone, config.getPhone().c_str())) {
         sim800l.deleteSMS(slot);
         Serial.println("SMS ignored");
+        digitalWrite(LED_BLUE, LOW);
         return;
       }
       // Retrieve SMS value.
