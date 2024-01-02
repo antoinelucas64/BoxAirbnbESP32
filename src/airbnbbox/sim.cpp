@@ -113,7 +113,8 @@ void Sim::init() {
   sim800lSerial->print("AT+CNMI=2,1\r\n");
 
   Serial.println("GSM SIM800L Ready");
-  if (firstStart) sendSMS(config.getPhone().c_str());
+  if (firstStart && !config.getPhones().empty()) sendSMS(config.getPhones()[0].c_str());
+  
   firstStart = false;
 }
 
@@ -204,8 +205,27 @@ void Sim::loop() {
     // +CLIP: "0612345678",129,"",0,"",0
     if (strncmp(buffer + 1, "CLIP", 4) == 0) {
       Serial.println("Appel avec numero -> possible action here");
+      char tel[256];
+      bool readClip = sscanf(buffer, "+CLIP: \"%s\",", &tel) == 1;
+      // tel is something like 0123456789",129,"",0,"",0 -> ",0,"",0
+      for(int i = 1; i < 255; i++){
+        if(tel[i] == '"') tel[i] = '\0';
+      }
+      if(readClip){
+        Serial.print("Read phone ");
+        Serial.println(tel);
+        if(config.phoneIsAllowed(tel,true)){
+          Serial.println("Granted");
+        }
+      }
+
       return;
     }
+
+    if (strncmp(buffer + 1, "CMTI", 4) != 0) {
+      Serial.println("ignore");
+      return;
+    } 
 
 
     //Scan the notification string for an SMS received notification.
@@ -231,7 +251,7 @@ void Sim::loop() {
       }
       Serial.print(F("FROM = "));
       Serial.println(phone);
-      if (!aa::contains(phone, config.getPhone().c_str())) {
+      if (!config.phoneIsAllowed(phone)) {
         sim800l.deleteSMS(slot);
         Serial.println("SMS ignored");
         digitalWrite(LED_BLUE, LOW);
@@ -290,7 +310,8 @@ void Sim::loop() {
   }
 
   if (simOn) {
-    if (millis() - simTimeRef > 1200000) {
+    // 6 000 000 is 100 minutes
+    if (millis() - simTimeRef > 6000000) {
       Serial.println("shut down sim ");
       simOn = false;
       digitalWrite(SIM800L_POWER, LOW);

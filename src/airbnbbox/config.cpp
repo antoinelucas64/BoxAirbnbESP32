@@ -7,11 +7,11 @@ void Config::init(){
   readConfig();
 }
 
-String Config::getType(){
+String Config::getType() const {
   return "basic";
 }
 
-String Config::info(){
+String Config::info() const {
 #ifdef ESP32
   String type = getType()+ "-ESP32" ;
 #else
@@ -74,5 +74,20 @@ void Config::writeWWWConfig(const String & user, const String& password_p) {
   config.putString("www_password", www_password);
   config.putString("www_user", www_user);
   config.end();
+}
+
+// duplicate function to avoir 2 write to the file.
+void Config::writeAllConfig(const String & ssid_p, const String & password_p,const String & wwwUser,const String & wwwPassword){
+  password = password_p;
+  ssid = ssid_p;
+  www_password =  wwwPassword;
+  www_user = wwwUser;
+  config.begin("config", false);
+  config.putString("ssid", ssid);
+  config.putString("password", password);
+  config.putString("www_password", www_password);
+  config.putString("www_user", www_user);
+  config.end();
+
 }
 

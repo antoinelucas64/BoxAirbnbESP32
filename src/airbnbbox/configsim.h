@@ -2,6 +2,8 @@
 #define CONFIG_SIM
 
 #include "config.h"
+#include <vector>
+#include <pthread.h>
 #define SIM800L_RX     27
 #define SIM800L_TX     26
 #define SIM800L_PWRKEY 4
@@ -20,22 +22,40 @@ public:
   void init();
   void readSimConfig();
   void writePowerState(bool powerState);
-  void writePhone(String phone);
+  void writePhones(std::vector<String> & phones);
+  void writeExtraPhones(std::vector<String> & phones);
 
-  inline String getPhone() {
-    return phone;
+  void writeAllConfig(String & phones, String & extraPhones, bool powerState);
+
+
+  bool phoneIsAllowed(const char * phone, bool includesExtra = false);
+  virtual String info() const;
+
+  inline std::vector<String> getExtraPhones() {
+    pthread_mutex_lock(&mutex);
+    std::vector<String> copy = phones;
+    pthread_mutex_unlock(&mutex);
+    return copy;
+  }
+  inline std::vector<String> getPhones() {
+    pthread_mutex_lock(&mutex);
+    std::vector<String> copy = phones;
+    pthread_mutex_unlock(&mutex);
+    return copy;
   }
 
   inline bool getPowerState() const {
     return powerState;
   }
 private:
-
-  String phone = "+3312345678";
+  // mutex on phones vector as web & sim on different threads.
+  pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+  std::vector<String> phones ;
+  std::vector<String> extraPhones ;
   bool powerState = 0;
 
 protected:
-  virtual String getType();
+  virtual String getType() const;
 
 };
 

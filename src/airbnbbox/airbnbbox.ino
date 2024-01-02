@@ -5,6 +5,8 @@
 #include "websim.h"
 #include "sim.h"
 #include "commands.h"
+#include "pthread.h"
+
 #ifdef ESP32
 #include <WiFi.h>  // il s’agit d’un ESP32
 #define NOTIFICATION_CONNECTION_WIFI ARDUINO_EVENT_WIFI_AP_STACONNECTED
@@ -52,6 +54,15 @@ void closeDoor() {
 
 bool modem_init = false;
 
+
+void * runSim(void * ptr){
+  while(true){
+    ((Sim*)ptr)->loop();
+    delay(500);
+  }
+}
+pthread_t thread;
+
 void setup() {
   Serial.begin(115200);
   myConfig.init();
@@ -85,8 +96,11 @@ void setup() {
   web.init();
 
   Serial.println("Start modem");
-  sim.init();
+  
+  pthread_create(&thread , NULL, &runSim, &sim);
   digitalWrite(LED_BLUE, LOW);
+
+
 }
 
 
@@ -95,6 +109,8 @@ void setup() {
 long prevMillis = 0;
 int interval = 1000;
 boolean ledState = false;
+
+
 void loop() {
   if (openTheDoor) openDoor();
   else if (doorIsOpen && millis() - timeDoorOpen > 10000) {
@@ -117,7 +133,6 @@ void loop() {
     prevMillis = millis();
   }
 
-  sim.loop();
 
  
 }

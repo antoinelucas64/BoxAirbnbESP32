@@ -1,18 +1,37 @@
 #include "rom/rtc.h"
 #include "websim.h"
+#define ADD_PHONE "Add"
+#define REMOVE_PHONE "Remove"
 
-
-
-WebSim::WebSim(ConfigSim& config_p, Sim & sim_p)
+WebSim::WebSim(ConfigSim& config_p, Sim& sim_p)
   : Web(config_p),
     config(config_p),
     sim(sim_p) {
   Serial.println("WebSim (contructor)");
 }
 
+int readExpectedSize(WebServer& server, std::vector<String>& phones) {
+  int size = phones.size();
+  Serial.print("size config ");
+  Serial.println(size);
+  if (size == 0) size = 1;
+  String sizeStr = server.arg("SIZE");
+  if (!sizeStr.isEmpty()) {
+    size = atoi(sizeStr.c_str());
+  }
+  String submit = server.arg("SUBMIT");
+  if (submit == ADD_PHONE) {
+    size++;
+  }
+  if (submit == REMOVE_PHONE && size > 1) size--;
+  return size;
+}
+
 
 void WebSim::init() {
-  Serial.println("phone " + config.getPhone());
+  for (int i = 0; i < config.getPhones().size(); i++) {
+    Serial.println("phone " + config.getPhones()[i]);
+  }
 
 
   server.on("/power", [&]() {
@@ -40,10 +59,27 @@ void WebSim::init() {
     }
 
     if (server.args() >= 1) {
-      String newPhone = server.arg("phone");
+
+      String submit = server.arg("SUBMIT");
       if (admin) {
-        Serial.println("udpate phone " + newPhone);
-        config.writePhone(newPhone);
+        std::vector<String> lastPhones = config.getPhones();
+        int expectedSize = readExpectedSize(server, lastPhones);
+        std::vector<String> phones;
+        int i = 0;
+        while (true) {
+          char phoneId[12];
+          sprintf(phoneId, "phone_%d", i);
+          String newPhone = server.arg(phoneId);
+          if (newPhone.isEmpty()) break;
+          Serial.println("udpate phone " + newPhone);
+          phones.push_back(newPhone);
+          i++;
+        }
+        if (phones.size() > expectedSize) {
+          phones.resize(expectedSize);
+        }
+        config.writePhones(phones);
+        if (submit == ADD_PHONE || submit == REMOVE_PHONE) server.send(200, "text/html", formPhone());
       } else {
         server.send(200, "text/html", incorrectPassword());
       }
@@ -64,17 +100,36 @@ void WebSim::init() {
 }
 
 String WebSim::formPhone() {
+  std::vector<String> phones = config.getPhones();
+  int size = readExpectedSize(server, phones);
+
+
   String out = headHtml() + "<p>Wifi</p>"
                             "<form action=\""
-                            "/updatePhone\">"
-                            "<label for='text2'>phone</label><br>"
-                            "<input type='text' id='phone' name='phone' value='\n"
-               + config.getPhone() + "'/>"
-                                     " <input type='submit' name='SUBMIT' value='Submit'>"
-                                     " </form>"
-                                     "<p><a href=\"/\">Back</a>"
-                                     "</body>"
-                                     "</html>";
+                            "/updatePhone\">";
+
+  for (int i = 0; i < size; i++) {
+    char phoneId[12];
+    sprintf(phoneId, "'phone_%d'", i);
+    out += "<label for='text2'>phone</label><br>"
+           "<input type='text' id='phone' name=";
+    out += phoneId;
+    out += " value='\n";
+    if (i < phones.size()) out += phones[i];
+    out += "'/>";
+  }
+  out += " <input type='hidden' name='SIZE' value=";
+  out += size;
+  out += ">"
+         " <input type='submit' name='SUBMIT' value='" ADD_PHONE
+         "'>"
+         " <input type='submit' name='SUBMIT' value='" REMOVE_PHONE
+         "'><br>"
+         " <input type='submit' name='SUBMIT' value='Submit'>"
+         " </form>"
+         "<p><a href=\"/\">Back</a>"
+         "</body>"
+         "</html>";
 
   return out;
 }
@@ -104,14 +159,19 @@ String WebSim::createAdminPage() {
   out += "<p>Password "
          + config.getPassword() + "</p><a class=\"button button-on\" href=\"/admin/wifi\">Modify</a>";
 
-  if (admin) out += "<p>Web administration</p>"
-                    "<p>User "
-                    + config.getWWWUser() + "<p>Password "
-                    + config.getWWWPassword() + "</p><a class=\"button button-on\" href=\"/admin/password\">Modify</a>"
-                                                "<p>Phone</p>"
-                                                "<p>phone "
-                    + config.getPhone() + "</p><a class=\"button button-on\" href=\"/admin/phone\">Modify</a>";
-
+  if (admin) {
+    out += "<p>Web administration</p>"
+           "<p>User "
+           + config.getWWWUser() + "<p>Password "
+           + config.getWWWPassword() + "</p><a class=\"button button-on\" href=\"/admin/password\">Modify</a>"
+                                       "<p>Phone</p>"
+                                       "<p>phone ";
+    for (int i = 0; i < config.getPhones().size(); i++) {
+      if (i) out += " ";
+      out += config.getPhones()[i];
+    }
+    out += "</p><a class=\"button button-on\" href=\"/admin/phone\">Modify</a>";
+  }
   out += "<p><a href=\"/\">Back</a>"
          "</body>"
          "</html>";
@@ -119,6 +179,6 @@ String WebSim::createAdminPage() {
   return out;
 }
 
-void WebSim::reboot(){
+void WebSim::reboot() {
   sim.reboot();
 }

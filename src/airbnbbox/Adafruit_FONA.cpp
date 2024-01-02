@@ -908,9 +908,9 @@ bool Adafruit_FONA::sendSMS(const char *smsaddr,const char *smsmsg) {
   if ((_type == FONA3G_A) || (_type == FONA3G_E)|| (_type == FONA800H) || (_type == FONA800L )) {
     // Eat two sets of CRLF
     readline(200);
-    DEBUG_PRINT("Line 1: "); DEBUG_PRINTLN(strlen(replybuffer));
+    DEBUG_PRINT("Line 1: "); DEBUG_PRINTLN(replybuffer);
     readline(200);
-    DEBUG_PRINT("Line 2: "); DEBUG_PRINTLN(strlen(replybuffer));
+    DEBUG_PRINT("Line 2: "); DEBUG_PRINTLN(replybuffer);
   }
   readline(40000); // read the +CMGS reply, wait up to 10 seconds!!!
   DEBUG_PRINT("Line 3: "); DEBUG_PRINTLN(replybuffer);

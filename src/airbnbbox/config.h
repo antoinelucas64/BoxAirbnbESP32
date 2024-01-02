@@ -28,10 +28,11 @@ public:
 
   void factoryReset();
 
-  virtual String info();
+  virtual String info() const;
   void writeConfig(const String & password);
   void writeConfig(const String & ssid, const String & password);
   void writeWWWConfig(const String & user,const String & password);
+  void writeAllConfig(const String & ssid, const String & password,const String & wwwUser,const String & wwwPassword);
   
   inline const String & getSSID() const {
     return ssid;
@@ -62,7 +63,7 @@ private:
   const char * config_file = "config.txt";
 
 protected:
-  virtual String getType();
+  virtual String getType() const;
   Preferences config;
 };
 #endif
