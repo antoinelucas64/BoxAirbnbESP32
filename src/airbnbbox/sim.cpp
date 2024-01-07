@@ -2,10 +2,6 @@
 #include "StringUtils.h"
 #include <WiFi.h>
 
-#define MODEM_POWER_ON SIM800L_POWER
-#define MODEM_RST 5
-#define MODEM_PWRKEY 4
-
 bool simOn = false;
 bool firstStart = true;
 HardwareSerial* sim800lSerial = &Serial1;
@@ -13,13 +9,14 @@ int simTimeRef = 0;
 
 Sim::Sim(ConfigSim& config_p)
   : config(config_p),
-    sim800l(Adafruit_FONA(SIM800L_PWRKEY)) {
+    sim800l(Adafruit_FONA(MODEM_PWRKEY)) {
 }
 
 void Sim::init() {
 
   Serial.println(F("Init Sim"));
-
+  {
+    LockMutex lock(config.getMutex());
 
 #ifdef MODEM_RST
   pinMode(MODEM_RST, OUTPUT);
@@ -27,26 +24,36 @@ void Sim::init() {
 #endif
 
   pinMode(MODEM_PWRKEY, OUTPUT);    // 4
-  pinMode(MODEM_POWER_ON, OUTPUT);  // 23
-  digitalWrite(MODEM_POWER_ON, HIGH);
-/*
+  pinMode(SIM800L_POWER, OUTPUT);  // 23
+  digitalWrite(SIM800L_POWER, HIGH);
+
   digitalWrite(MODEM_PWRKEY, HIGH);
   delay(100);
   digitalWrite(MODEM_PWRKEY, LOW);
-  delay(1000);
-  digitalWrite(MODEM_PWRKEY, HIGH);*/
+  //delay(1000);
+  //digitalWrite(MODEM_PWRKEY, HIGH);
+
+  }
+
 
   simOn = true;
 
   simTimeRef = millis();
   delay(6000);
 
-  // Make it slow so its easy to read!
-  sim800lSerial->begin(115200, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
-  //sim800lSerial->begin(600, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
+  // avoid digitalWrite with several threads at same time
+  {
+    LockMutex lock(config.getMutex());
+    // Make it slow so its easy to read!
+    sim800lSerial->begin(115200, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
+    //sim800lSerial->begin(600, SERIAL_8N1, SIM800L_TX, SIM800L_RX);
+  
 
-  if (!sim800l.begin(*sim800lSerial)) {
-    Serial.println(F("Couldn't find GSM SIM800L"));
+    if (!sim800l.begin(*sim800lSerial)) {
+     Serial.println(F("Couldn't find GSM SIM800L"));
+     simOn = false;
+     return;
+    }
   }
   sim800l.readFromSim(5000);// CALL READY
   sim800l.readFromSim(5000);// SMS READY
@@ -66,15 +73,15 @@ void Sim::init() {
   sim800l.sendCheckReply(F("AT+CMGL=\"ALL\""), F("> "),20000);  // OK
   //sim800l.sendCheckReply(F("AT+CMGL=4"), F("> "),4000);        // error
   // storage to modem
-  sim800l.sendCheckReply("AT+CPMS?", F("> "));                      // +CPMS: "ME",0,50,"SM",9,50,"MT",9,100
-  sim800l.sendCheckReply("AT+CPMS=?", F("> "));                     // +CPMS: ("SM","ME","SM_P","ME_P","MT"),("SM","ME","SM_P","ME_P","MT"),("SM","ME","SM_P","ME_P","MT")
+  //sim800l.sendCheckReply("AT+CPMS?", F("> "));                      // +CPMS: "ME",0,50,"SM",9,50,"MT",9,100
+  //sim800l.sendCheckReply("AT+CPMS=?", F("> "));                     // +CPMS: ("SM","ME","SM_P","ME_P","MT"),("SM","ME","SM_P","ME_P","MT"),("SM","ME","SM_P","ME_P","MT")
   sim800l.sendCheckReply("AT+CPMS=\"ME\",\"ME\",\"ME\"", F("> "));  // error
-  sim800l.sendCheckReply("AT+CSCS=?", F("> ")); // +CSCS: ("IRA","GSM","UCS2","HEX","PCCP","PCDN","8859-1")
+  //sim800l.sendCheckReply("AT+CSCS=?", F("> ")); // +CSCS: ("IRA","GSM","UCS2","HEX","PCCP","PCDN","8859-1")
   sim800l.sendCheckReply("AT+CSCS=\"GSM\"", F("> ")); // OK
-  sim800l.sendCheckReply("AT+CSTA=?", F("> "));//+CSTA: (129,145,161,177)
+  //sim800l.sendCheckReply("AT+CSTA=?", F("> "));//+CSTA: (129,145,161,177)
 
-  sim800l.sendCheckReply("AT+CLIP=?", F("> "),3000);
-  sim800l.sendCheckReply("AT+CLIP?", F("> "),3000);
+ // sim800l.sendCheckReply("AT+CLIP=?", F("> "),3000);
+ // sim800l.sendCheckReply("AT+CLIP?", F("> "),3000);
   sim800l.sendCheckReply("AT+CLIP=1", F("> "),3000);
 
   // CFUN=0 minmum function CFUN=1 normal CFUN=4 mode avion
@@ -89,17 +96,17 @@ void Sim::init() {
 
 
   // CNMI command supported
-  sim800l.sendCheckReply("AT+CNMI=?", ">",1500);
+  //sim800l.sendCheckReply("AT+CNMI=?", ">",1500);
 
   // not to store sms
-  sim800l.sendCheckReply("AT+CNMI?", F("> "),3000);
-  sim800l.sendCheckReply("AT+CNMI=3,3,2,1,0", F("> "),2000);
+  //sim800l.sendCheckReply("AT+CNMI?", F("> "),3000);
+  //sim800l.sendCheckReply("AT+CNMI=3,3,2,1,0", F("> "),2000);
   //  sim800l.sendCheckReply("AT+CNMI=2,2",F("> "));
   // list of  storage type
-  sim800l.sendCheckReply("AT+CMGDA=?", F("> "),1000);
+  //sim800l.sendCheckReply("AT+CMGDA=?", F("> "),1000);
 
   //list of supported index to delete
-  sim800l.sendCheckReply("AT+CMGD=?", F("> "),1000);
+  //sim800l.sendCheckReply("AT+CMGD=?", F("> "),1000);
 
   char imei[16] = { 0 };  // MUST use a 16 character buffer for IMEI!
   uint8_t imeiLen = sim800l.getIMEI(imei);
@@ -312,6 +319,7 @@ void Sim::loop() {
   if (simOn) {
     // 6 000 000 is 100 minutes
     if (millis() - simTimeRef > 6000000) {
+    //if (millis() - simTimeRef > 600000) {
       Serial.println("shut down sim ");
       simOn = false;
       digitalWrite(SIM800L_POWER, LOW);

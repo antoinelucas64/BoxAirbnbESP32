@@ -4,7 +4,12 @@
 #define KEY_EXTRA_PHONE "extra_phone"
 #define KEY_POWER "state"
 
-ConfigSim::ConfigSim(){
+ConfigSim::ConfigSim() : 
+  lockArray(),
+  lockGpio(),
+  phones(),
+  extraPhones(),
+  powerState(0){
 
 }
 
@@ -53,9 +58,8 @@ void configToArray(String configData, std::vector<String> & array){
 }
 
 void ConfigSim::writePhones(std::vector<String>  & phones_p) {
-  pthread_mutex_lock(&mutex);
+  LockMutex lock(&lockArray);
   phones = phones_p;
-  pthread_mutex_unlock(&mutex);
 
   String phone = arrayToConfig(phones_p);
   config.begin("config", false);
@@ -66,10 +70,9 @@ void ConfigSim::writePhones(std::vector<String>  & phones_p) {
 
 
 void ConfigSim::writeExtraPhones(std::vector<String>  & extraPhones_p) {
-  pthread_mutex_lock(&mutex);
+  LockMutex lock(&lockArray);
   extraPhones = extraPhones_p;
-  pthread_mutex_unlock(&mutex);
-
+  
   String phone = arrayToConfig(extraPhones_p);
   config.begin("config", false);
   config.putString(KEY_EXTRA_PHONE, phone);
@@ -77,10 +80,9 @@ void ConfigSim::writeExtraPhones(std::vector<String>  & extraPhones_p) {
 }
 
 void ConfigSim::writeAllConfig(String & phones_p, String & extraPhones_p, bool powerState_p){
-  pthread_mutex_lock(&mutex);
+  LockMutex lock(&lockArray);
   configToArray(phones_p,phones);
   configToArray(extraPhones_p,extraPhones);
-  pthread_mutex_unlock(&mutex);
   powerState = powerState_p;
   config.begin("config", false);
   config.putString(KEY_PHONE, phones_p);
@@ -92,7 +94,7 @@ void ConfigSim::writeAllConfig(String & phones_p, String & extraPhones_p, bool p
 
 
 void ConfigSim::readSimConfig() {
-  pthread_mutex_lock(&mutex);
+  LockMutex lock(&lockArray);
 
   config.begin("config", true);
   phones.clear();
@@ -102,7 +104,6 @@ void ConfigSim::readSimConfig() {
 
   powerState = config.getBool(KEY_POWER);
   config.end();
-  pthread_mutex_unlock(&mutex);
 
 }
 
@@ -131,6 +132,21 @@ bool ConfigSim::phoneIsAllowed(const char * phone,bool includesExtra){
   }
   return false;
 }
+
+
+
+std::vector<String> ConfigSim::getExtraPhones() {
+    LockMutex lock(&lockArray);
+    std::vector<String> copy = phones;
+    return copy;
+  }
+
+std::vector<String> ConfigSim::getPhones() {
+    LockMutex lock(&lockArray);
+    std::vector<String> copy = phones;
+    return copy;
+  }
+
 
 String ConfigSim::info() const {
   String infoConf = Config::info();

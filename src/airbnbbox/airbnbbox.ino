@@ -37,9 +37,12 @@ bool doorIsOpen = false;
 int timeDoorOpen;
 
 void openDoor() {
+  LockMutex lock(myConfig.getMutex());
+
   digitalWrite(LED_BLUE, HIGH);
   Serial.println("open\nHIGH");
   digitalWrite(RELAY_DOOR, DOOR_OPEN);
+
   openTheDoor = false;
   timeDoorOpen = millis();
   doorIsOpen = true;
@@ -48,8 +51,10 @@ void openDoor() {
 void closeDoor() {
   doorIsOpen = false;
   Serial.println("close door");
+  LockMutex lock(myConfig.getMutex());
   digitalWrite(RELAY_DOOR, DOOR_CLOSE);
   digitalWrite(LED_BLUE, LOW);
+
 }
 
 bool modem_init = false;
@@ -66,14 +71,18 @@ pthread_t thread;
 void setup() {
   Serial.begin(115200);
   myConfig.init();
-  pinMode(RELAY_DOOR, OUTPUT);
-  digitalWrite(RELAY_DOOR, DOOR_CLOSE);
-  pinMode(RELAY_ELEC, OUTPUT);
-  digitalWrite(RELAY_ELEC, myConfig.getPowerState());
+  {
+    LockMutex lock(myConfig.getMutex());
+    pinMode(RELAY_DOOR, OUTPUT);
+    digitalWrite(RELAY_DOOR, DOOR_CLOSE);
+    pinMode(RELAY_ELEC, OUTPUT);
+    digitalWrite(RELAY_ELEC, myConfig.getPowerState());
 
-  pinMode(LED_BLUE, OUTPUT);
+    pinMode(LED_BLUE, OUTPUT);
 
-  digitalWrite(LED_BLUE, HIGH);
+    digitalWrite(LED_BLUE, HIGH);
+  }
+
 
 
 
@@ -98,7 +107,10 @@ void setup() {
   Serial.println("Start modem");
   
   pthread_create(&thread , NULL, &runSim, &sim);
+
+  LockMutex lock(myConfig.getMutex());
   digitalWrite(LED_BLUE, LOW);
+  
 
 
 }

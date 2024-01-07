@@ -3,11 +3,11 @@
 
 #include "config.h"
 #include <vector>
-#include <pthread.h>
+#include "mutex.h"
 #define SIM800L_RX     27
 #define SIM800L_TX     26
-#define SIM800L_PWRKEY 4
-#define SIM800L_RST    5
+#define MODEM_PWRKEY 4
+#define MODEM_RST    5
 #define SIM800L_POWER  23
 #define RELAY_ELEC 12
 #define POWER_ON  LOW
@@ -15,6 +15,14 @@
 
 
 class ConfigSim : public Config {
+
+private:
+  // mutex on phones vector as web & sim on different threads.
+  aa::Mutex lockArray;
+  aa::Mutex lockGpio;
+  std::vector<String> phones ;
+  std::vector<String> extraPhones ;
+  bool powerState = 0;
 
 public:
   ConfigSim();
@@ -31,28 +39,16 @@ public:
   bool phoneIsAllowed(const char * phone, bool includesExtra = false);
   virtual String info() const;
 
-  inline std::vector<String> getExtraPhones() {
-    pthread_mutex_lock(&mutex);
-    std::vector<String> copy = phones;
-    pthread_mutex_unlock(&mutex);
-    return copy;
-  }
-  inline std::vector<String> getPhones() {
-    pthread_mutex_lock(&mutex);
-    std::vector<String> copy = phones;
-    pthread_mutex_unlock(&mutex);
-    return copy;
-  }
+  std::vector<String> getExtraPhones() ;
+  std::vector<String> getPhones();
 
+  inline aa::Mutex * getMutex(){
+    return &lockGpio;
+  }
+  
   inline bool getPowerState() const {
     return powerState;
   }
-private:
-  // mutex on phones vector as web & sim on different threads.
-  pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-  std::vector<String> phones ;
-  std::vector<String> extraPhones ;
-  bool powerState = 0;
 
 protected:
   virtual String getType() const;

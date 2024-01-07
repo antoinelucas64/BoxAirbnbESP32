@@ -73,9 +73,9 @@ bool Adafruit_FONA::begin(Stream &port) {
 
   pinMode(_rstpin, OUTPUT);
   digitalWrite(_rstpin, HIGH);
-  delay(10);
+  delay(40);
   digitalWrite(_rstpin, LOW);
-  delay(100);
+  delay(200);
   digitalWrite(_rstpin, HIGH);
 
   DEBUG_PRINTLN(F("Attempting to open comm with ATs"));
