@@ -13,11 +13,14 @@ public:
   void loop();
 
   void reboot();
+  static const int MAX_SMS_SIZE = 128 ;
 private:
   Sim(const Sim &);
   ConfigSim& config;
-  Adafruit_FONA sim800l;
+  Adafruit_FONA * sim800l;
   void sendSMS(const char * telephone);
-  void sendSMS(const char * telephone, String  msg);
+  void sendSMS(const char * telephone, const String & msg);
+  /** split sms into n sub messages */
+  void sendBigSMS(const char * telephone,const String & msg,const String & key);
 };
 #endif

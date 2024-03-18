@@ -5,7 +5,7 @@
 #include "websim.h"
 #include "sim.h"
 #include "commands.h"
-#include "pthread.h"
+#include <esp_pthread.h>
 
 #ifdef ESP32
 #include <WiFi.h>  // il s’agit d’un ESP32
@@ -30,7 +30,7 @@ IPAddress local_IP(10, 10, 10, 10);
 IPAddress subnet(255, 255, 255, 0);
 DNSServer dnsServer;
 Sim sim(myConfig);
-WebSim web(myConfig,sim);
+WebSim web(myConfig, sim);
 /*TinyGsm modem(SerialAT);*/
 bool openTheDoor = false;
 bool doorIsOpen = false;
@@ -54,15 +54,14 @@ void closeDoor() {
   LockMutex lock(myConfig.getMutex());
   digitalWrite(RELAY_DOOR, DOOR_CLOSE);
   digitalWrite(LED_BLUE, LOW);
-
 }
 
 bool modem_init = false;
 
 
-void * runSim(void * ptr){
-  while(true){
-    ((Sim*)ptr)->loop();
+void *runSim(void *ptr) {
+  while (true) {
+    ((Sim *)ptr)->loop();
     delay(500);
   }
 }
@@ -95,6 +94,10 @@ void setup() {
     openTheDoor = true;
   },
                NOTIFICATION_CONNECTION_WIFI);
+  Serial.print("SSID ");
+  Serial.print(myConfig.getSSID());
+  Serial.print(" password ");
+  Serial.println(myConfig.getPassword());
   WiFi.softAP(myConfig.getSSID().c_str(), myConfig.getPassword().c_str());
 
   dnsServer.start(DNS_PORT, "*", local_IP);
@@ -105,14 +108,20 @@ void setup() {
   web.init();
 
   Serial.println("Start modem");
-  
-  pthread_create(&thread , NULL, &runSim, &sim);
+
+ // sim.init();
+
+  esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
+  Serial.print("default STACK size ");
+  Serial.println(cfg.stack_size);
+  cfg.stack_size = (32 * 1024);
+  esp_pthread_set_cfg(&cfg);
+
+  pthread_create(&thread, NULL, &runSim, &sim);
+
 
   LockMutex lock(myConfig.getMutex());
   digitalWrite(LED_BLUE, LOW);
-  
-
-
 }
 
 
@@ -122,6 +131,36 @@ long prevMillis = 0;
 int interval = 1000;
 boolean ledState = false;
 
+void memoryMonitor() {
+  // heap
+  int free = ESP.getFreeHeap();
+  int max = ESP.getMaxAllocHeap();
+  int min = ESP.getMinFreeHeap();
+  Serial.print("Heap min ");
+  Serial.print(min);
+  Serial.print(" max ");
+  Serial.print(max);
+  Serial.print(" free ");
+  Serial.println(free);
+  // psram
+  free = ESP.getFreePsram();
+  max = ESP.getMaxAllocPsram();
+  min = ESP.getMinFreePsram();
+  Serial.print("PSRAM min ");
+  Serial.print(min);
+  Serial.print(" max ");
+  Serial.print(max);
+  Serial.print(" free ");
+  Serial.println(free);
+  // psram
+  free = ESP.getFreeSketchSpace();
+  max = ESP.getSketchSize();
+
+  Serial.print("Sketch size ");
+  Serial.print(max);
+  Serial.print(" free ");
+  Serial.println(free);
+}
 
 void loop() {
   if (openTheDoor) openDoor();
@@ -134,17 +173,17 @@ void loop() {
     dnsServer.processNextRequest();
     web.handleClient();
   } else {
-    if(web.haveToReboot()) web.reboot();
+    if (web.haveToReboot()) web.reboot();
     delay(500);
   }
 
+// sim.loop();
+
   if (millis() - prevMillis > interval) {
     ledState = !ledState;
-    //digitalWrite(LED_BLUE, ledState);
+    // digitalWrite(LED_BLUE, ledState);
 
     prevMillis = millis();
+    // memoryMonitor();
   }
-
-
- 
 }

@@ -10,44 +10,54 @@
 #define MODEM_RST    5
 #define SIM800L_POWER  23
 #define RELAY_ELEC 12
-#define POWER_ON  LOW
-#define POWER_OFF  HIGH
+#define POWER_ON  HIGH
+#define POWER_OFF  LOW
 
 
 class ConfigSim : public Config {
 
 private:
   // mutex on phones vector as web & sim on different threads.
-  aa::Mutex lockArray;
-  aa::Mutex lockGpio;
-  std::vector<String> phones ;
-  std::vector<String> extraPhones ;
-  bool powerState = 0;
+  aa::Mutex * lockArray;
+  aa::Mutex * lockGpio;
+  std::vector<String> * phones ;
+  std::vector<String> * extraPhones ;
+  int powerState = 0;
 
 public:
   ConfigSim();
   ~ConfigSim(){};
   void init();
   void readSimConfig();
-  void writePowerState(bool powerState);
+  void writePowerState(int powerState);
   void writePhones(std::vector<String> & phones);
   void writeExtraPhones(std::vector<String> & phones);
+  virtual void writeAllConfig();
+  static String arrayToConfig(const std::vector<String>  & array) ;
+  static void configToArray(String configData, std::vector<String> & array) ;
 
-  void writeAllConfig(String & phones, String & extraPhones, bool powerState);
+  //void writeAllConfig(String & phones, String & extraPhones, int powerState);
 
 
-  bool phoneIsAllowed(const char * phone, bool includesExtra = false);
+  bool phoneIsAllowed(const char * phone, bool includesExtra = false) const;
   virtual String info() const;
 
-  std::vector<String> getExtraPhones() ;
-  std::vector<String> getPhones();
+  std::vector<String> getExtraPhones() const;
+  std::vector<String> getPhones() const;
+
+  void setPhones(const std::vector<String> & src);
+  void setExtraPhones(const std::vector<String> & src);
 
   inline aa::Mutex * getMutex(){
-    return &lockGpio;
+    return lockGpio;
   }
   
-  inline bool getPowerState() const {
+  inline int getPowerState() const {
     return powerState;
+  }
+
+  inline void setPowerState(int power){
+    powerState = power;
   }
 
 protected:

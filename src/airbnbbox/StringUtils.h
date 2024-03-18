@@ -11,5 +11,8 @@ namespace aa {
   */
   bool contains(const char * line, const  char * word);
   String secondWord(const String & line);
+
+  bool sameWords(const char * first , const char * second);
+
 };
 #endif

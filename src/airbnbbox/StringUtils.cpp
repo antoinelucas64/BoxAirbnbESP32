@@ -39,3 +39,7 @@ String aa::secondWord(const String & line){
   }
   return out;
 }
+
+bool aa::sameWords(const char * first , const char * second){
+  return strstr(first,second) == first && strstr(second,first) == second;
+}

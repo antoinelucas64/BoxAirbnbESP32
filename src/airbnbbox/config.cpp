@@ -1,6 +1,7 @@
 #include "config.h"
 
 Config::Config() {
+  config = new Preferences();
  }
 
 void Config::init(){
@@ -18,16 +19,22 @@ String Config::info() const {
   String type = getType()+ "-ESP8266" ;
 #endif
 
-  return "type=\t"+type+"\nSSID=\t"+getSSID() + "\nPassword=\t" + getPassword() + "\nWeb user=\t" + getWWWUser() + "\nWeb password=\t" + getWWWPassword() + "\nVersion=\t 1\nDate=\t" + __DATE__ + "\n";
+  return line("type=",type)
+        +line(KEY_SSID,getSSID())
+        + line(KEY_PASSWORD, getPassword()) 
+        + line(KEY_WWW_USER, getWWWUser())
+        + line(KEY_WWW_PASSWORD , getWWWPassword())
+        + line("Version","1")
+        + line("Date", __DATE__ );
 }
 
 void Config::factoryReset(){
-  config.begin("config", false);
-  config.putString("ssid", "Appartement Associes");
-  config.putString("password", "totototo");
-  config.putString("www_user", "admin");
-  config.putString("www_password", "toto");
-  config.end();
+  config->begin("config", false);
+  config->putString(KEY_SSID, "Appartement Associes");
+  config->putString(KEY_PASSWORD, "totototo");
+  config->putString(KEY_WWW_USER, "admin");
+  config->putString(KEY_WWW_PASSWORD, "toto");
+  config->end();
   blink();
 
 }
@@ -42,52 +49,57 @@ void Config::blink() {
 }
 
 void Config::readConfig() {
-  config.begin("config", true);
-  ssid = config.getString("ssid", ssid);
-  password = config.getString("password", password);
-  www_password = config.getString("www_password", www_password);
-  www_user = config.getString("www_user", www_user);
-  config.end();
+  config->begin(config_file, true);
+  ssid = config->getString(KEY_SSID, ssid);
+  password = config->getString(KEY_PASSWORD, password);
+  www_password = config->getString(KEY_WWW_PASSWORD, www_password);
+  www_user = config->getString(KEY_WWW_USER, www_user);
+  config->end();
+}
+
+// duplicate function to avoir 2 write to the file.
+void Config::writeAllConfig(){
+  config->begin(config_file, false);
+  config->putString(KEY_SSID, ssid);
+  config->putString(KEY_PASSWORD, password);
+  config->putString(KEY_WWW_PASSWORD, www_password);
+  config->putString(KEY_WWW_USER, www_user);
+  config->end();
 }
 
 void Config::writeConfig(const String& password_p) {
   password = password_p;
-  config.begin("config", false);
-  config.putString("password", password);
-  config.end();
+  config->begin(config_file, false);
+  config->putString(KEY_PASSWORD, password);
+  config->end();
 }
 
 void Config::writeConfig(const String & ssid_p,const String& password_p) {
   password = password_p;
   ssid = ssid_p;
-  config.begin("config", false);
-  config.putString("ssid", ssid);
-  config.putString("password", password);
-  config.end();
+  config->begin(config_file, false);
+  config->putString(KEY_SSID, ssid);
+  config->putString(KEY_PASSWORD, password);
+  config->end();
 }
 
 
 void Config::writeWWWConfig(const String & user, const String& password_p) {
   www_password = password_p;
   www_user = user;
-  config.begin("config", false);
-  config.putString("www_password", www_password);
-  config.putString("www_user", www_user);
-  config.end();
+  config->begin(config_file, false);
+  config->putString(KEY_WWW_PASSWORD, www_password);
+  config->putString(KEY_WWW_USER, www_user);
+  config->end();
 }
 
-// duplicate function to avoir 2 write to the file.
+// duplicate function to avoid 2 write to the file.
 void Config::writeAllConfig(const String & ssid_p, const String & password_p,const String & wwwUser,const String & wwwPassword){
   password = password_p;
   ssid = ssid_p;
   www_password =  wwwPassword;
   www_user = wwwUser;
-  config.begin("config", false);
-  config.putString("ssid", ssid);
-  config.putString("password", password);
-  config.putString("www_password", www_password);
-  config.putString("www_user", www_user);
-  config.end();
+  writeAllConfig();
 
 }
 

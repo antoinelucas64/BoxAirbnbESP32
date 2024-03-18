@@ -104,7 +104,7 @@ String WebSim::formPhone() {
   int size = readExpectedSize(server, phones);
 
 
-  String out = headHtml() + "<p>Wifi</p>"
+  String out = headHtml() + "<p>Phone</p>"
                             "<form action=\""
                             "/updatePhone\">";
 
@@ -135,7 +135,7 @@ String WebSim::formPhone() {
 }
 
 String WebSim::responseHTML() {
-  String btnPw = config.getPowerState() == POWER_ON ? "off" : "on";
+  String btnPw = config.getPowerState() == POWER_ON ? "on": "off" ;
 
   String out = headHtml() + "<p>Door</p><a class=\"button button-on\" href=\"/open\">OPEN</a>"
                             "<p>Power</p><a class=\"button button-"
