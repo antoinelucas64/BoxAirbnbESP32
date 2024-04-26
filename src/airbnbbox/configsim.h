@@ -11,7 +11,7 @@
 #define SIM800L_POWER  23
 // SIM800H #define RELAY_ELEC 12
 // SIM800L
-#define RELAY_ELEC 25
+#define RELAY_ELEC 21
 #define POWER_ON  HIGH
 #define POWER_OFF  LOW
 

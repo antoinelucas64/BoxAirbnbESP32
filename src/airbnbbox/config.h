@@ -12,7 +12,9 @@
 
 
 // pins possible: 2 (4) 12 13
-#define RELAY_DOOR 14
+// SIM800H #define RELAY_DOOR 14
+// SIM800L
+#define RELAY_DOOR 19
 #define DOOR_OPEN  LOW
 #define DOOR_CLOSE  HIGH
 

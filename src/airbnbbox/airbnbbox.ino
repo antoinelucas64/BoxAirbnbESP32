@@ -35,6 +35,7 @@ WebSim web(myConfig, sim);
 bool openTheDoor = false;
 bool doorIsOpen = false;
 int timeDoorOpen;
+ 
 
 void openDoor() {
   LockMutex lock(myConfig.getMutex());
