@@ -21,6 +21,8 @@ private:
 
 protected:
   virtual  String responseHTML();
+  virtual String formAdminPage() ;
+  virtual void handleLogin();
 
   virtual String createAdminPage();
 };

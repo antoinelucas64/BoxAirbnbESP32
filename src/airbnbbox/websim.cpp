@@ -161,8 +161,7 @@ String WebSim::createAdminPage() {
 
   if (admin) {
     out += "<p>Web administration</p>"
-           "<p>User "
-           + config.getWWWUser() + "<p>Password "
+           "<p>Password "
            + config.getWWWPassword() + "</p><a class=\"button button-on\" href=\"/admin/password\">Modify</a>"
                                        "<p>Phone</p>"
                                        "<p>phone ";
@@ -175,6 +174,57 @@ String WebSim::createAdminPage() {
   out += "<p><a href=\"/\">Back</a>"
          "</body>"
          "</html>";
+
+  return out;
+}
+
+// login page, also called for disconnect
+void WebSim::handleLogin() {
+  String msg;
+  Serial.println("Handle login");
+
+  if (server.hasArg("PASSWORD")) {
+    Serial.println("user " + server.arg("user") + " vs " + config.getWWWUser());
+    Serial.println("Password " + server.arg("PASSWORD") + " vs " + config.getWWWPassword());
+    Serial.println("checked  " + server.arg("isadmin"));
+
+    if (server.arg("PASSWORD") ==  config.getWWWPassword()) {
+      anthenticate = true;
+      admin = true;
+    }
+
+    if (anthenticate) {
+      timeRef = millis();
+      server.sendHeader("Location", "/admin");
+      server.send(301);
+
+      return;
+    }
+    msg = "Wrong username/password! try again.";
+    Serial.println("Log in Failed");
+  }
+  String content = headHtml() + "\n<form action='/login' method='POST'>Log in<p> \n";
+  content += "<input type='password' name='PASSWORD' placeholder='password'><p>\n";
+  content += "<input type='submit' name='SUBMIT' value='Submit'></form>" + msg + "<br>\n";
+  
+
+  content += "You also can go <a href='/'>back</a></body></html>\n";
+  server.send(200, "text/html", content);
+}
+
+String WebSim::formAdminPage() {
+  String out = headHtml() + "<p>Web admin</p>"
+                            "<form action=\""
+               + "/updateAdmin\">";
+
+  out += "<label for='text2'>Password</label><br>"
+         "<input type='text' id='password' name='password' value='\n"
+         + config.getWWWPassword() + "'/>"
+                                     " <input type='submit' name='SUBMIT' value='Submit'>"
+                                     " </form>"
+                                     "<p><a href=\"/\">Back</a>"
+                                     "</body>"
+                                     "</html>";
 
   return out;
 }

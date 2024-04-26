@@ -32,19 +32,22 @@ protected:
   bool admin = false;
   bool is_authenticated();
 
+  bool anthenticate = false;
+  int timeRef = 0;
+
   virtual  String responseHTML();
   String headHtml();
   virtual String createAdminPage();
   String incorrectPassword();
+  virtual String formAdminPage() ;
+  virtual void handleLogin();
 
 private:
   Config& config;
   bool wantReboot;
 
   String formWifiPage() ;
-  virtual String formAdminPage() ;
   String info();
-  void handleLogin();
 
   
 };

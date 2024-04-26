@@ -176,6 +176,8 @@ void loop() {
     if (web.haveToReboot()) web.reboot();
     delay(500);
   }
+    Serial.println("gpio 1" + digitalRead(1));
+    Serial.println("gpio 2" + digitalRead(2));
 
 // sim.loop();
 
