@@ -9,7 +9,9 @@
 #define MODEM_PWRKEY 4
 #define MODEM_RST    5
 #define SIM800L_POWER  23
-#define RELAY_ELEC 12
+// SIM800H #define RELAY_ELEC 12
+// SIM800L
+#define RELAY_ELEC 25
 #define POWER_ON  HIGH
 #define POWER_OFF  LOW
 
